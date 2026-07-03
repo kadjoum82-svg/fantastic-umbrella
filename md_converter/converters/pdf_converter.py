@@ -72,12 +72,18 @@ def _median_font_size(doc: "fitz.Document") -> float | None:
 
 
 def _page_to_markdown(page: "fitz.Page", body_size: float | None) -> str:
+    table_bboxes, table_items = _extract_tables(page)
+
     page_dict = page.get_text("dict")
-    blocks_out: list[str] = []
+    items: list[tuple[float, str]] = list(table_items)
 
     for block in page_dict.get("blocks", []):
         if block.get("type") != 0:  # 0 = texte, on ignore les images
             continue
+
+        block_bbox = fitz.Rect(block.get("bbox", (0, 0, 0, 0)))
+        if any(block_bbox.intersects(table_bbox) for table_bbox in table_bboxes):
+            continue  # déjà couvert par un tableau détecté
 
         line_texts: list[str] = []
         max_size = 0.0
@@ -93,9 +99,54 @@ def _page_to_markdown(page: "fitz.Page", body_size: float | None) -> str:
             continue
 
         text = " ".join(line_texts)
-        blocks_out.append(_apply_heading(text, max_size, body_size))
+        items.append((block_bbox.y0, _apply_heading(text, max_size, body_size)))
 
-    return "\n\n".join(blocks_out).strip()
+    items.sort(key=lambda item: item[0])
+    return "\n\n".join(content for _, content in items).strip()
+
+
+def _extract_tables(page: "fitz.Page") -> tuple[list["fitz.Rect"], list[tuple[float, str]]]:
+    """Détecte les tableaux de la page (grilles/lignes) et les convertit en
+    tableaux Markdown, pour éviter de les restituer comme du texte brut désordonné."""
+    try:
+        found = page.find_tables()
+    except Exception:
+        return [], []
+
+    bboxes: list["fitz.Rect"] = []
+    items: list[tuple[float, str]] = []
+    for table in found.tables:
+        try:
+            rows = table.extract()
+        except Exception:
+            continue
+        markdown_table = _rows_to_markdown(rows)
+        if not markdown_table:
+            continue
+        bbox = fitz.Rect(table.bbox)
+        bboxes.append(bbox)
+        items.append((bbox.y0, markdown_table))
+
+    return bboxes, items
+
+
+def _rows_to_markdown(rows: list[list[str | None]]) -> str:
+    cleaned = [[(cell or "").strip().replace("\n", " ") for cell in row] for row in rows]
+    cleaned = [row for row in cleaned if any(cell for cell in row)]
+    if not cleaned:
+        return ""
+
+    width = max(len(row) for row in cleaned)
+    cleaned = [row + [""] * (width - len(row)) for row in cleaned]
+
+    header, *body_rows = cleaned
+    lines = [
+        "| " + " | ".join(header) + " |",
+        "| " + " | ".join(["---"] * width) + " |",
+    ]
+    for row in body_rows:
+        lines.append("| " + " | ".join(row) + " |")
+    return "\n".join(lines)
 
 
 def _apply_heading(text: str, max_size: float, body_size: float | None) -> str:

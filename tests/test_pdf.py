@@ -61,3 +61,41 @@ def test_convert_pdf_without_ocr_flags_scanned_page(tmp_path):
     result = convert(str(pdf_path), ocr=False)
 
     assert any("scannée" in w for w in result.warnings)
+
+
+def _make_table_pdf(path):
+    doc = fitz.open()
+    page = doc.new_page()
+
+    page.insert_text((72, 60), "Rapport Trimestriel", fontsize=18)
+
+    x0, y0, x1, y1 = 72, 90, 300, 168
+    mid_x, mid_y = (x0 + x1) / 2, (y0 + y1) / 2
+    shape = page.new_shape()
+    shape.draw_rect(fitz.Rect(x0, y0, x1, y1))
+    shape.draw_line((mid_x, y0), (mid_x, y1))
+    shape.draw_line((x0, mid_y), (x1, mid_y))
+    shape.finish()
+    shape.commit()
+
+    page.insert_text((x0 + 5, y0 + 20), "Produit")
+    page.insert_text((mid_x + 5, y0 + 20), "Ventes")
+    page.insert_text((x0 + 5, mid_y + 20), "Widget")
+    page.insert_text((mid_x + 5, mid_y + 20), "42")
+
+    page.insert_text((72, 190), "Fin du rapport.", fontsize=11)
+
+    doc.save(path)
+    doc.close()
+
+
+def test_convert_pdf_detects_table_as_markdown(tmp_path):
+    pdf_path = tmp_path / "tableau.pdf"
+    _make_table_pdf(pdf_path)
+
+    result = convert(str(pdf_path))
+
+    assert "Rapport Trimestriel" in result.markdown
+    assert "Fin du rapport." in result.markdown
+    assert "| Produit | Ventes |" in result.markdown
+    assert "| Widget | 42 |" in result.markdown

@@ -28,6 +28,18 @@ def _iter_inputs(inputs: list[str], recursive: bool) -> list[str]:
     return resolved
 
 
+def _write_assets(assets: dict[str, bytes], output_dir: Path) -> None:
+    """Écrit les fichiers annexes (ex: images extraites) à côté du Markdown,
+    au chemin relatif exact référencé par celui-ci."""
+    for rel_path, content in assets.items():
+        normalized = Path(rel_path)
+        if normalized.is_absolute() or ".." in normalized.parts:
+            continue
+        asset_path = output_dir / normalized
+        asset_path.parent.mkdir(parents=True, exist_ok=True)
+        asset_path.write_bytes(content)
+
+
 def _default_output_path(source: str, output_dir: Path | None) -> Path:
     if is_url(source):
         name = urlparse(source).path.rstrip("/").rsplit("/", 1)[-1] or "page"
@@ -91,6 +103,7 @@ def main(argv: list[str] | None = None) -> int:
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(result.markdown, encoding="utf-8")
+        _write_assets(result.assets, out_path.parent)
         print(f"[ok] {source} -> {out_path}")
 
         if args.verbose:
