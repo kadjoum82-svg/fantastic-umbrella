@@ -64,7 +64,11 @@ def _extract_chapter_images(
         if not src:
             continue
 
-        resolved = posixpath.normpath(posixpath.join(base_dir, urlsplit(src).path))
+        split_src = urlsplit(src)
+        if split_src.scheme:  # URL absolue ou data: URI : rien à résoudre dans le paquet EPUB
+            continue
+
+        resolved = posixpath.normpath(posixpath.join(base_dir, split_src.path))
         item = image_items.get(resolved)
         if item is None:
             continue

@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import shutil
+import subprocess
+
 from docx import Document
 
 from md_converter import convert
+
+from .conftest import requires_soffice
 
 
 def _make_docx(path):
@@ -38,3 +43,27 @@ def test_convert_docx_headings_lists_and_tables(tmp_path):
     assert "- Deuxième élément" in result.markdown
     assert "| Colonne A | Colonne B |" in result.markdown
     assert "| 1 | 2 |" in result.markdown
+
+
+@requires_soffice
+def test_convert_legacy_doc_via_libreoffice(tmp_path):
+    docx_path = tmp_path / "ancien.docx"
+    document = Document()
+    document.add_heading("Document Word Ancien", level=1)
+    document.add_paragraph("Contenu de test pour le format .doc.")
+    document.save(docx_path)
+
+    soffice = shutil.which("soffice") or shutil.which("libreoffice")
+    subprocess.run(
+        [soffice, "--headless", "--norestore", "--convert-to", "doc", "--outdir", str(tmp_path), str(docx_path)],
+        check=True,
+        capture_output=True,
+        timeout=300,
+    )
+    doc_path = tmp_path / "ancien.doc"
+    assert doc_path.exists()
+
+    result = convert(str(doc_path))
+
+    assert "Document Word Ancien" in result.markdown
+    assert "Contenu de test pour le format .doc." in result.markdown
