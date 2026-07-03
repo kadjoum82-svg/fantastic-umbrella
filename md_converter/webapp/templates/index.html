@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>md-converter</title>
+  <meta name="description" content="Convertit PDF, Word, EPUB, images et pages web en Markdown, sans limite de pages.">
+  <meta name="theme-color" content="#141821">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icon-192.png') }}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="md-converter">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="page">
+    <header class="page__header">
+      <h1>md-converter</h1>
+      <p>PDF, Word (.doc/.docx), EPUB, images, pages web… vers Markdown. Sans limite de pages.</p>
+    </header>
+
+    <form id="convert-form" class="card">
+      <div id="dropzone" class="dropzone" tabindex="0">
+        <p id="dropzone-label">Glissez un fichier ici, ou cliquez pour le choisir</p>
+        <input id="file-input" type="file" hidden>
+      </div>
+
+      <div class="divider"><span>ou</span></div>
+
+      <label class="field">
+        <span>URL d'une page web</span>
+        <input id="url-input" type="url" placeholder="https://exemple.com/article">
+      </label>
+
+      <div class="options">
+        <label class="checkbox">
+          <input id="ocr-toggle" type="checkbox" checked>
+          <span>OCR pour images et PDF scannés</span>
+        </label>
+        <label class="field field--inline">
+          <span>Langue OCR</span>
+          <select id="ocr-lang">
+            <option value="eng+fra" selected>Anglais + Français</option>
+            <option value="fra">Français</option>
+            <option value="eng">Anglais</option>
+          </select>
+        </label>
+      </div>
+
+      <button type="submit" class="button">Convertir</button>
+    </form>
+
+    <p id="status" class="status" hidden></p>
+
+    <section id="result" class="card" hidden>
+      <div id="warnings"></div>
+      <button id="download-btn" type="button" class="button button--secondary" hidden></button>
+      <pre id="preview" class="preview"></pre>
+    </section>
+
+    <footer class="page__footer">
+      <p>L'OCR nécessite Tesseract installé sur la machine qui exécute cette application ; la conversion des anciens
+        fichiers .doc nécessite LibreOffice. Tout se passe en local, aucun fichier n'est envoyé ailleurs que sur cette
+        machine.</p>
+    </footer>
+  </main>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

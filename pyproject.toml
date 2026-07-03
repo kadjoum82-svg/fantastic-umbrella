@@ -21,13 +21,19 @@ dependencies = [
     "Pillow>=10.0",
     "pytesseract>=0.3.10",
     "markitdown>=0.1.0",
+    "flask>=3.0",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+build = ["pyinstaller>=6.0"]
 
 [project.scripts]
 mdconvert = "md_converter.cli:main"
+mdconvert-app = "md_converter.desktop:main"
 
 [tool.setuptools.packages.find]
 include = ["md_converter*"]
+
+[tool.setuptools.package-data]
+md_converter = ["webapp/templates/*", "webapp/static/*"]

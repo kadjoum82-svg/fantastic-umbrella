@@ -4,7 +4,47 @@ Convertisseur multi-format vers Markdown : **PDF, Word (.doc/.docx), EPUB, image
 
 Aucune limite de pages n'est imposée : les PDF, EPUB et documents Word sont traités page/élément par élément (streaming), quelle que soit leur taille.
 
-## Installation
+## Application (exécutable, sans ligne de commande)
+
+Le moyen le plus rapide de l'utiliser : un exécutable autonome qui lance une petite application
+(interface web locale dans votre navigateur) — glissez-déposez un fichier, récupérez le Markdown.
+
+1. Allez dans l'onglet **[Actions](https://github.com/kadjoum82-svg/fantastic-umbrella/actions/workflows/build-executables.yml)**
+   du dépôt (ou **Releases** si une version taguée existe), et téléchargez l'exécutable de votre
+   système parmi les artefacts du dernier run :
+   - `mdconvert-app-windows.exe` (Windows)
+   - `mdconvert-app-macos` (macOS)
+   - `mdconvert-app-linux` (Linux)
+2. Lancez-le (double-clic). Votre navigateur s'ouvre automatiquement sur l'application.
+   - **Windows** : SmartScreen peut avertir « éditeur non reconnu » → *Informations
+     complémentaires* → *Exécuter quand même* (l'exécutable n'est pas signé).
+   - **macOS** : Gatekeeper bloquera le premier lancement → clic droit sur le fichier → *Ouvrir*
+     (ou `xattr -d com.apple.quarantine mdconvert-app-macos` dans le Terminal), pour la même raison.
+3. **Depuis votre téléphone** : le terminal affiche une seconde adresse du type
+   `http://192.168.x.x:PORT/`. Ouvrez-la dans le navigateur du téléphone (même réseau Wi-Fi que
+   l'ordinateur qui fait tourner l'application), puis utilisez *« Ajouter à l'écran d'accueil »*
+   (Chrome/Safari) pour obtenir une icône d'application. Il ne s'agit pas d'une application native
+   iOS/Android publiée sur un store — cela nécessiterait Xcode/Android Studio, un compte
+   développeur et une revue de store, hors de portée d'un exécutable généré ici — mais l'expérience
+   d'usage (icône, plein écran, hors ligne pour l'interface) est équivalente pour un usage
+   personnel.
+
+Pour reconstruire ces exécutables vous-même (ou en générer un pour une plateforme non listée) :
+
+```bash
+pip install -e ".[build]"
+pyinstaller --noconfirm --onefile --name mdconvert-app \
+  --add-data "md_converter/webapp/templates:md_converter/webapp/templates" \
+  --add-data "md_converter/webapp/static:md_converter/webapp/static" \
+  run_desktop.py
+# sur Windows, remplacer les ":" du --add-data par ";"
+```
+
+L'exécutable ne fonctionne que sur le système d'exploitation pour lequel il a été construit ;
+c'est pourquoi la CI (`.github/workflows/build-executables.yml`) le construit séparément pour
+Windows, macOS et Linux à chaque tag `vX.Y.Z` (ou déclenchement manuel).
+
+## Installation (ligne de commande / bibliothèque Python)
 
 ```bash
 python3 -m venv .venv
@@ -19,6 +59,13 @@ Dépendances système requises pour certaines fonctionnalités :
 
 ```bash
 sudo apt-get install tesseract-ocr tesseract-ocr-fra poppler-utils libreoffice-writer
+```
+
+Une fois installé, `mdconvert-app` lance la même interface web locale que l'exécutable packagé,
+sans avoir besoin de PyInstaller :
+
+```bash
+mdconvert-app
 ```
 
 ## Utilisation en ligne de commande
